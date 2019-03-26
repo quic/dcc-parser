@@ -144,7 +144,7 @@ def read_config(config_pt):
                     else:
                         offset = 0
         elif descriptor == loop_descriptor:
-            loop_offset = val & bm(config_loopoffset, 0)
+            loop_offset = val & bm(config_loopoffset - 1, 0)
             loop_count = bvalsel(27, config_loopoffset, val)
 
             if loop_offset == 0:
