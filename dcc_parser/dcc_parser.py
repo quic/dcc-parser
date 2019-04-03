@@ -99,6 +99,8 @@ def read_config(config_pt):
         on_zero_link_len = -1
         #word size
         track_len = 4
+        #empty SRAM is filled with 0xdededede
+        empty_ind = 0xdededede
 
     if options.config_offset is not None:
         config_pt.seek(int(options.config_offset, 16), 1)
@@ -121,12 +123,15 @@ def read_config(config_pt):
         descriptor = val & (0x3 << 30)
 	read_write_ind = val & (0x1 << 28)
 
-	if read_write_ind == dcc_write_ind:
+        if val == empty_ind:
             config_pt.seek(8, 1)
         elif descriptor == address_descriptor:
-            base = ((val & 0x0FFFFFFF) << 4)
-            offset = 0
-            length = 1
+            if read_write_ind == dcc_write_ind:
+                config_pt.seek(8, 1)
+            else:
+                base = ((val & 0x0FFFFFFF) << 4)
+                offset = 0
+                length = 1
         elif descriptor == link_descriptor:
             for i in range(0, 2):
                 offset = offset + (val & 0xFF) * 4 + (length - 1) * track_len
