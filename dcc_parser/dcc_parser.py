@@ -15,6 +15,7 @@ import logging.handlers
 import os
 import struct
 import sys
+import re
 
 from optparse import OptionParser
 
@@ -72,12 +73,12 @@ def read_data(data_pt):
     return nr
 
 
+list_nr = []
+
 def read_config(config_pt):
-    list_nr = []
-    list_nr.append(0)
     offset = 0
     base = 0
-
+    list_nr.append(0)
     if options.version is None:
         address_descriptor = 0x1 << 31
         link_descriptor = 0
@@ -101,9 +102,6 @@ def read_config(config_pt):
         track_len = 4
         #empty SRAM is filled with 0xdededede
         empty_ind = 0xdededede
-
-    if options.config_offset is not None:
-        config_pt.seek(int(options.config_offset, 16), 1)
 
     if options.config_loopoffset is not None:
         config_loopoffset = int(options.config_loopoffset)
@@ -139,7 +137,6 @@ def read_config(config_pt):
 
                 length = (val & 0x7f)
                 val = val >> link_second_arg
-
                 if length != 0:
                     list_nr.append(length + list_nr[- 1])
                     add_addr(base, offset, length)
@@ -227,6 +224,23 @@ def dump_regs(options):
         dump_regs_xml(options)
 
 
+def read_data_atb(atb_data_pt):
+    for line in atb_data_pt:
+        if "ATID\" : 65, \"OpCode\" : \"D8\"" in line:
+            data1 = ""
+            for i in range(4):
+                data_byte_re = re.match(
+                    "\{\"ATID\" : 65, \"OpCode\" : \"D8\", \"Payload\" : "
+                    "\"0x([0-9A-Fa-f][0-9A-Fa-f])\"\}", line)
+                if data_byte_re:
+                    data1 = (data_byte_re.group(1))+data1
+                else:
+                    log.error("ATB file format wrong")
+                    exit(1)
+                if i < 3:
+                    line = atb_data_pt.next()
+            data.append(int(data1, 16))
+
 if __name__ == '__main__':
     usage = 'usage: %prog [options to print]. Run with --help for more details'
     parser = OptionParser(usage)
@@ -299,20 +313,25 @@ if __name__ == '__main__':
             sys.exit(1)
 
     count = 0
-    while True:
-        count = read_config(sram_file)
 
-        if options.atbfile is None:
-            atb_file = sram_file
+    if options.config_offset is not None:
+        sram_file.seek(int(options.config_offset, 16), 1)
 
-        if read_data(sram_file):
-            log.error('Couldn\'t read complete data.')
-            break
+    count = read_config(sram_file)
 
-        if new_linked_list(sram_file) is False:
-            parsed_data = log_init('PARSED_DATA', options.outdir, options.outfile)
-            dump_regs(options)
-            break
+    if options.atbfile is None:
+        atb_file = sram_file
+
+    if read_data(sram_file):
+        log.error('Couldn\'t read complete data.')
+        sys.exit(1)
+
+    if new_linked_list(sram_file):
+        read_config(sram_file)
+        read_data_atb(atb_file)
+
+    parsed_data = log_init('PARSED_DATA', options.outdir, options.outfile)
+    dump_regs(options)
 
     sram_file.close()
 
