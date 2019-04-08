@@ -304,14 +304,6 @@ if __name__ == '__main__':
         log.error("Do you have read permissions on the path?")
         sys.exit(1)
 
-    if options.atbfile is not None:
-        try:
-            atb_file = open(options.atbfile, 'rb')
-        except:
-            log.error("could not open path {0}".format(options.atbfile))
-            log.error("Do you have read permissions on the path?")
-            sys.exit(1)
-
     count = 0
 
     if options.config_offset is not None:
@@ -326,11 +318,19 @@ if __name__ == '__main__':
         log.error('Couldn\'t read complete data.')
         sys.exit(1)
 
-    if new_linked_list(sram_file):
-        read_config(sram_file)
-        read_data_atb(atb_file)
-
     parsed_data = log_init('PARSED_DATA', options.outdir, options.outfile)
+    if new_linked_list(sram_file):
+        if options.atbfile is not None:
+            try:
+                atb_file = open(options.atbfile, 'rb')
+                read_config(sram_file)
+                read_data_atb(atb_file)
+            except:
+                log.error("could not open path {0}".format(options.atbfile))
+                log.error("Do you have read permissions on the path?")
+                dump_regs(options)
+                sys.exit(1)
+
     dump_regs(options)
 
     sram_file.close()
