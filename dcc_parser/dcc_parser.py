@@ -22,6 +22,7 @@ from optparse import OptionParser
 count = 0
 address = []
 data = []
+dcc_sink = []
 
 def bm(msb, lsb):
     'Creates a bitmask from msb to lsb'
@@ -262,6 +263,8 @@ if __name__ == '__main__':
                       help='Start offset for DCC configuration')
     parser.add_option('--config-loopoffset', dest='config_loopoffset',
                       help='Offset of loop value')
+    parser.add_option('--dcc_sink', dest='dcc_sink',
+                      help='DCC sink(SRAM/ATB).Comma seperated list if more than one list used')
 
     (options, args) = parser.parse_args()
 
@@ -284,6 +287,12 @@ if __name__ == '__main__':
         ext = '.json'
     else:
         ext = '.xml'
+
+    if options.dcc_sink is None:
+        dcc_sink.append('SRAM')
+    else:
+        dcc_sink = options.dcc_sink.split(',')
+        print dcc_sink
 
     if options.outfile is None:
         options.outfile = 'dcc_captured_data{0}'.format(ext)
@@ -308,34 +317,32 @@ if __name__ == '__main__':
 
     if options.config_offset is not None:
         sram_file.seek(int(options.config_offset, 16), 1)
-
-    count = read_config(sram_file)
-
-    if options.atbfile is None:
-        atb_file = sram_file
-
-    if read_data(sram_file):
-        log.error('Couldn\'t read complete data.')
-        sys.exit(1)
-
     parsed_data = log_init('PARSED_DATA', options.outdir, options.outfile)
-    if new_linked_list(sram_file):
-        if options.atbfile is not None:
-            try:
-                atb_file = open(options.atbfile, 'rb')
-                read_config(sram_file)
-                read_data_atb(atb_file)
-            except:
-                log.error("could not open path {0}".format(options.atbfile))
-                log.error("Do you have read permissions on the path?")
-                dump_regs(options)
+    for sink in dcc_sink:
+        count = read_config(sram_file)
+        print sink
+        if sink == 'SRAM':
+            print 'Read data from SRAM'
+            if read_data(sram_file):
+                log.error('Couldn\'t read complete data.')
                 sys.exit(1)
+        elif sink == 'ATB':
+            print 'Read data from ATB file'
+            if options.atbfile is not None:
+                try:
+                    atb_file = open(options.atbfile, 'rb')
+                    read_data_atb(atb_file)
+                    atb_file.close()
+                except:
+                    log.error("could not open path {0}".format(options.atbfile))
+                    log.error("Do you have read permissions on the path?")
+                    dump_regs(options)
+                    sys.exit(1)
+            else:
+                log.error('ATB file not given')
+        if not new_linked_list(sram_file):
+            break
 
     dump_regs(options)
-
     sram_file.close()
-
-    if options.atbfile is not None:
-        atb_file.close()
-
     sys.stderr.flush()
