@@ -80,6 +80,7 @@ def read_config(config_pt):
     offset = 0
     base = 0
     list_nr.append(0)
+    count = 0
     if options.version is None:
         address_descriptor = 0x1 << 31
         link_descriptor = 0
@@ -115,7 +116,6 @@ def read_config(config_pt):
             break
 
         val = struct.unpack('<L', word)[0]
-
         if val == 0:
             break
 
@@ -140,6 +140,7 @@ def read_config(config_pt):
                 val = val >> link_second_arg
                 if length != 0:
                     list_nr.append(length + list_nr[- 1])
+                    count = count + 1
                     add_addr(base, offset, length)
                 else:
                     if (i == 0 ):
@@ -155,6 +156,7 @@ def read_config(config_pt):
 
             loop_nr = list_nr[-1] - list_nr[-loop_offset]
             list_nr.append(loop_nr * loop_count + list_nr[-1])
+            count = count + 1
             add_loop_addr(loop_nr, loop_count)
 
         elif descriptor == rd_mod_wr_descriptor:
@@ -165,7 +167,7 @@ def read_config(config_pt):
             '''
             config_pt.seek(8, 1)
 
-    return list_nr[-1]
+    return count
 
 
 def new_linked_list(config_pt):
@@ -225,22 +227,29 @@ def dump_regs(options):
         dump_regs_xml(options)
 
 
-def read_data_atb(atb_data_pt):
+def read_data_atb(atb_data_pt, count):
+    atb_count = 0
     for line in atb_data_pt:
         if "ATID\" : 65, \"OpCode\" : \"D8\"" in line:
             data1 = ""
-            for i in range(4):
+            i = 0
+            while i < 4:
                 data_byte_re = re.match(
                     "\{\"ATID\" : 65, \"OpCode\" : \"D8\", \"Payload\" : "
                     "\"0x([0-9A-Fa-f][0-9A-Fa-f])\"\}", line)
                 if data_byte_re:
-                    data1 = (data_byte_re.group(1))+data1
+                    data1 = (data_byte_re.group(1)) + data1
+                    i += 1
                 else:
                     log.error("ATB file format wrong")
                     exit(1)
-                if i < 3:
+                if i < 4:
                     line = atb_data_pt.next()
             data.append(int(data1, 16))
+            atb_count = atb_count + 1
+            if atb_count >= count:
+                break
+    return atb_count
 
 if __name__ == '__main__':
     usage = 'usage: %prog [options to print]. Run with --help for more details'
@@ -318,9 +327,13 @@ if __name__ == '__main__':
     if options.config_offset is not None:
         sram_file.seek(int(options.config_offset, 16), 1)
     parsed_data = log_init('PARSED_DATA', options.outdir, options.outfile)
+    if options.atbfile is not None and os.path.exists(options.atbfile):
+        atb_file = open(options.atbfile, 'rb')
+
     for sink in dcc_sink:
         count = read_config(sram_file)
-        print sink
+        print "Number of registers in list:" , count
+        print "Sink used for the list:" ,  sink
         if sink == 'SRAM':
             print 'Read data from SRAM'
             if read_data(sram_file):
@@ -330,9 +343,9 @@ if __name__ == '__main__':
             print 'Read data from ATB file'
             if options.atbfile is not None:
                 try:
-                    atb_file = open(options.atbfile, 'rb')
-                    read_data_atb(atb_file)
-                    atb_file.close()
+                    atb_count = read_data_atb(atb_file, count)
+                    if atb_count < count:
+                        log.error("ATB file don't have complete DCC data")
                 except:
                     log.error("could not open path {0}".format(options.atbfile))
                     log.error("Do you have read permissions on the path?")
@@ -341,8 +354,10 @@ if __name__ == '__main__':
             else:
                 log.error('ATB file not given')
         if not new_linked_list(sram_file):
+            log.error("Next list not available")
             break
-
+    if options.atbfile is not None and os.path.exists(options.atbfile):
+        atb_file.close()
     dump_regs(options)
     sram_file.close()
     sys.stderr.flush()
