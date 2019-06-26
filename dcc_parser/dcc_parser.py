@@ -254,13 +254,25 @@ def read_data_atb(atb_data_pt, count):
                     i += 1
                 else:
                     log.error("ATB file format wrong")
-                    exit(1)
+                    return atb_count
                 if i < 4:
                     line = atb_data_pt.next()
             data.append(int(data1, 16))
             atb_count = atb_count + 1
             if atb_count >= count:
                 break
+        elif "ATID\" : 65, \"OpCode\" : \"D32\"" in line:
+            #print line
+            data_byte_re = re.match(
+                "\{\"ATID\" : 65, \"OpCode\" : \"D32\", \"Payload\" : "
+                "\"0x([0-9A-Fa-f]+)\"}", line)
+            if data_byte_re:
+                data1 = (data_byte_re.group(1))
+                #print data1
+                data.append(int(data1, 16))
+                atb_count = atb_count + 1
+                if atb_count >= count:
+                    break
     return atb_count
 
 if __name__ == '__main__':
@@ -357,14 +369,16 @@ if __name__ == '__main__':
                 try:
                     atb_count = read_data_atb(atb_file, count)
                     if atb_count < count:
+                        del address[-count:]
+                        del data[-atb_count:]
                         log.error("ATB file don't have complete DCC data")
                 except:
                     log.error("could not open path {0}".format(options.atbfile))
                     log.error("Do you have read permissions on the path?")
-                    dump_regs(options)
-                    sys.exit(1)
+                    del address[-count:]
             else:
                 log.error('ATB file not given')
+                del address[:-count or None]
         if not new_linked_list(sram_file):
             log.error("Next list not available")
             break
