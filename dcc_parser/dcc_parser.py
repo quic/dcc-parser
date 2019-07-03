@@ -378,7 +378,7 @@ if __name__ == '__main__':
                     del address[-count:]
             else:
                 log.error('ATB file not given')
-                del address[:-count or None]
+                del address[-count:]
         if not new_linked_list(sram_file):
             log.error("Next list not available")
             break
