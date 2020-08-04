@@ -325,7 +325,7 @@ if __name__ == '__main__':
         dcc_sink.append('SRAM')
     else:
         dcc_sink = options.dcc_sink.split(',')
-        print dcc_sink
+        print(dcc_sink)
 
     if options.outfile is None:
         options.outfile = 'dcc_captured_data{0}'.format(ext)
@@ -356,15 +356,15 @@ if __name__ == '__main__':
 
     for sink in dcc_sink:
         count = read_config(sram_file)
-        print "Number of registers in list:" , count
-        print "Sink used for the list:" ,  sink
+        print("Number of registers in list:" , count)
+        print("Sink used for the list:" ,  sink)
         if sink == 'SRAM':
-            print 'Read data from SRAM'
+            print('Read data from SRAM')
             if read_data(sram_file):
                 log.error('Couldn\'t read complete data.')
                 sys.exit(1)
         elif sink == 'ATB':
-            print 'Read data from ATB file'
+            print('Read data from ATB file')
             if options.atbfile is not None:
                 try:
                     atb_count = read_data_atb(atb_file, count)
