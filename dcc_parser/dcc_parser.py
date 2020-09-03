@@ -352,7 +352,7 @@ if __name__ == '__main__':
         sram_file.seek(int(options.config_offset, 16), 1)
     parsed_data = log_init('PARSED_DATA', options.outdir, options.outfile)
     if options.atbfile is not None and os.path.exists(options.atbfile):
-        atb_file = open(options.atbfile, 'rb')
+        atb_file = open(options.atbfile, 'r')
 
     for sink in dcc_sink:
         count = read_config(sram_file)
@@ -373,8 +373,7 @@ if __name__ == '__main__':
                         del data[-atb_count:]
                         log.error("ATB file don't have complete DCC data")
                 except:
-                    log.error("could not open path {0}".format(options.atbfile))
-                    log.error("Do you have read permissions on the path?")
+                    log.error("could not read ATB data {0}".format(options.atbfile))
                     del address[-count:]
             else:
                 log.error('ATB file not given')
