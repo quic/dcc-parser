@@ -23,6 +23,7 @@ count = 0
 address = []
 data = []
 dcc_sink = []
+next_ll_offset = []
 
 def bm(msb, lsb):
     'Creates a bitmask from msb to lsb'
@@ -70,7 +71,7 @@ def read_data(data_pt):
         val = struct.unpack('<L', word)[0]
         data.append(val)
         nr = nr - 1
-
+    next_ll_offset.append(hex(data_pt.tell()))
     return nr
 
 
@@ -224,6 +225,7 @@ def dump_regs_xml(options):
     for addr, val in zip(address, data):
         parsed_data.info("\t\t<register address=\"0x{0:08x}\" value=\"0x{1:08x}\" />".format(addr, val))
     parsed_data.info("\t</chip>")
+    parsed_data.info("\t<nex_ll_offset>next_ll_offset : {0} </next_ll_offset>".format(next_ll_offset[-1]))
     parsed_data.info("</hwioDump>")
     return
 
