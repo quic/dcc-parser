@@ -157,12 +157,13 @@ def read_config(config_pt):
 
             if loop_offset == 0:
                 continue
-
-            loop_nr = list_nr[-1] - list_nr[-loop_offset]
-            list_nr.append(loop_nr * loop_count + list_nr[-1])
-            count = count + 1
-            add_loop_addr(loop_nr, loop_count)
-
+            try:
+                loop_nr = list_nr[-1] - list_nr[-loop_offset]
+                list_nr.append(loop_nr * loop_count + list_nr[-1])
+                count = count + 1
+                add_loop_addr(loop_nr, loop_count)
+            except Exception as err:
+                pass
         elif descriptor == rd_mod_wr_descriptor:
             '''
             Skip over mask and value of rd_mod_wr.
