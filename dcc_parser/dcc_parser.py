@@ -1,4 +1,4 @@
-# Copyright (c) 2015, 2017, 2019-2020 The Linux Foundation. All rights reserved.
+# Copyright (c) 2015, 2017, 2019-2021 The Linux Foundation. All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 and
@@ -81,6 +81,7 @@ list_nr = []
 def read_config(config_pt):
     offset = 0
     base = 0
+    length = 1
     list_nr.append(0)
     count = 0
     if options.version is None:
