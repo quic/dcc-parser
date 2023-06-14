@@ -183,11 +183,12 @@ def read_config(config_pt):
             that's for rd_mod_wr instead of read operation.
             '''
             for i in range(0, tmp_count):
-                last_length = list_nr[-1] - list_nr[-2]
-                list_nr.pop()
-                count = count - 1
-                for j in range(0, last_length):
-                   address.pop()
+                if (val & 1 == 0): # check for Keep bit
+                    last_length = list_nr[-1] - list_nr[-2]
+                    list_nr.pop()
+                    count = count - 1
+                    for j in range(0, last_length):
+                       address.pop()
 
             config_pt.seek(8, 1)
 
